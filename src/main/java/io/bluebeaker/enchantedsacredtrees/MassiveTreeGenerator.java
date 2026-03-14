@@ -1,18 +1,17 @@
 package io.bluebeaker.enchantedsacredtrees;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.SaplingBlock;
-import net.minecraft.block.material.Material;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.SectionPos;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.lighting.WorldLightManager;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.lighting.LevelLightEngine;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -50,7 +49,7 @@ public class MassiveTreeGenerator {
 	private Random rand = new Random();
 
 	/** Running variables */
-	private World world;
+	private Level world;
 	private int[] basePos = new int[] { 0, 0, 0 };
 	private int heightLimit = 0;
 	private int minHeight = -1;
@@ -84,9 +83,8 @@ public class MassiveTreeGenerator {
 
 	private void setup() {
 
-		leafBases = MathHelper.ceil(heightLimit * heightAttenuation);
+		leafBases = Mth.ceil(heightLimit * heightAttenuation);
 		density = Math.max(1, (int) (1.382D + Math.pow(branchDensity * heightLimit / 13.0D, 2.0D)));
-		// chunkMap = new TLongObjectHashMap<>((int) (scaleWidth * heightLimit));
 	}
 
 	private float layerSize(int par1) {
@@ -138,8 +136,8 @@ public class MassiveTreeGenerator {
 				for (float var9 = 0.5f; var7 < var1; ++var7) {
 					float var11 = scaleWidth * var8 * (rand.nextFloat() + 0.328f);
 					float var13 = rand.nextFloat() * 2.0f * PI;
-					int var15 = MathHelper.floor(var11 * Math.sin(var13) + basePos[0] + var9);
-					int var16 = MathHelper.floor(var11 * Math.cos(var13) + basePos[2] + var9);
+					int var15 = Mth.floor(var11 * Math.sin(var13) + basePos[0] + var9);
+					int var16 = Mth.floor(var11 * Math.cos(var13) + basePos[2] + var9);
 					int[] var17 = new int[] { var15, var3, var16 };
 					int[] var18 = new int[] { var15, var3 + leafDistanceLimit, var16 };
 
@@ -166,12 +164,12 @@ public class MassiveTreeGenerator {
 		leafNodes = var2;
 		leafNodesLength = var4;
 	}
-	private void genVines(World world, int x, int y, int z, int length){	//Generate vines for fungus
+	private void genVines(Level world, int x, int y, int z, int length){
 		for(int i=1;i<length;i++){
-			if(world.getBlockState(new BlockPos(x,y-i,z)).getMaterial() != Material.AIR) return;
+			if(!world.getBlockState(new BlockPos(x,y-i,z)).isAir()) return;
 			this.setBlockAndNotifyAdequately(world, x, y-i, z, vines);
 		}
-		if(vines2!=null && world.getBlockState(new BlockPos(x,y-length,z)).getMaterial() == Material.AIR)
+		if(vines2!=null && world.getBlockState(new BlockPos(x,y-length,z)).isAir())
 		this.setBlockAndNotifyAdequately(world, x, y-length, z, vines2);
 	}
 	private void genLeafLayer(int x, int y, int z, final int size) {
@@ -198,14 +196,14 @@ public class MassiveTreeGenerator {
 						BlockState state = world.getBlockState(placementPos);
 						Block block = state.getBlock();
 						BlockState blockToSet = leaves;
-						if (this.genLightsAndVines){	//Generate vines for fungus
+						if (this.genLightsAndVines){
 							float randFloat = rand.nextFloat();
-							if(randFloat<0.03f && world.getBlockState(placementPos.below()).getMaterial() == Material.AIR){
+							if(randFloat<0.03f && world.getBlockState(placementPos.below()).isAir()){
 								if(this.lights!=null && randFloat<0.02f) blockToSet=lights;
 								else if(this.vines!=null) this.genVines(world, x, y, z, rand.nextInt(this.height/3));
 							}
 						}
-						if (safeGrowth ? (block.canBeReplacedByLeaves(state, world, placementPos)) :
+						if (safeGrowth ? canReplaceWithLeaves(state) :
 								block != Blocks.BEDROCK) {
 									this.setBlockAndNotifyAdequately(world, x, y, z, blockToSet);
 								}
@@ -270,9 +268,9 @@ public class MassiveTreeGenerator {
 			int[] var14 = var4;
 
 			for (int var15 = 0; var15 != var16; var15 += var9) {
-				var14[var6] = MathHelper.floor(par1[var6] + var15 + 0.5F);
-				var14[var7] = MathHelper.floor(par1[var7] + var15 * var10 + 0.5F);
-				var14[var8] = MathHelper.floor(par1[var8] + var15 * var12 + 0.5F);
+				var14[var6] = Mth.floor(par1[var6] + var15 + 0.5F);
+				var14[var7] = Mth.floor(par1[var7] + var15 * var10 + 0.5F);
+				var14[var8] = Mth.floor(par1[var8] + var15 * var12 + 0.5F);
 				BlockState state2 = logBS;
 				int var18 = var14[0] - par1[0];
 				var18 = ((t = var18 >> 31) ^ var18) - t;
@@ -322,9 +320,6 @@ public class MassiveTreeGenerator {
 					this.placeBlockLine(bottomPoint, topPoint, log, wood);
 					this.setBlockAndNotifyAdequately(world, topPoint[0], topPoint[1], topPoint[2],
 							wood);
-					// BlockPos placementPos = placement.set(bottomPoint[0], bottomPoint[1] - 1, bottomPoint[2]);
-					// BlockState state = world.getBlockState(placementPos);
-					// state.getBlock().onPlantGrow(state, world, placementPos, base);
 				}
 			}
 		}
@@ -400,14 +395,14 @@ public class MassiveTreeGenerator {
 
 			for (; var14 != var15; var14 += var8) {
 				var13[var5] = par1[var5] + var14;
-				var13[var6] = MathHelper.floor(par1[var6] + var14 * var9);
-				var13[var7] = MathHelper.floor(par1[var7] + var14 * var11);
+				var13[var6] = Mth.floor(par1[var6] + var14 * var9);
+				var13[var7] = Mth.floor(par1[var7] + var14 * var11);
 				BlockPos pos = placement.set(var13[0], var13[1], var13[2]);
 				BlockState state = world.getBlockState(pos);
 				Block block = state.getBlock();
 
-				if (safeGrowth ? !(block.canBeReplacedByLogs(state, world, pos) ||
-						block instanceof SaplingBlock) :
+				if (safeGrowth ? !(canReplaceWithLogs(state) ||
+						block instanceof SacredSapling) :
 						block == Blocks.BEDROCK)
 					break;
 			}
@@ -427,13 +422,18 @@ public class MassiveTreeGenerator {
 			return false;
 		heightLimit = newHeight;
 
-		BlockPos pos = placement.set(basePos[0], basePos[1] - 1, basePos[2]);
-		BlockState state = world.getBlockState(pos);
-		Block block = state.getBlock();
+		BlockPos saplingPos = new BlockPos(basePos[0], basePos[1], basePos[2]);
+		BlockState saplingState = world.getBlockState(saplingPos);
+		if (!saplingState.canSurvive(world, saplingPos)) {
+			// Fallback: check if block below is dirt-like
+			BlockPos belowPos = saplingPos.below();
+			BlockState belowState = world.getBlockState(belowPos);
+			if (!belowState.is(BlockTags.DIRT) && !belowState.is(BlockTags.NYLIUM)
+					&& !belowState.is(Blocks.MYCELIUM) && !belowState.is(Blocks.SOUL_SOIL))
+				return false;
+		}
 
-		if (!block.canSustainPlant(state, world, pos, Direction.UP, (SaplingBlock)world.getBlockState(placement.set(basePos[0],basePos[1],basePos[2])).getBlock()))
-			return false;
-		else {
+		{
 			int[] var5 = new int[] { basePos[0], basePos[1], basePos[2] };
 			int[] var6 = new int[] { basePos[0], basePos[1] + heightLimit - 1, basePos[2] };
 
@@ -484,18 +484,6 @@ public class MassiveTreeGenerator {
 		}
 	}
 
-	/**
-	 * Rescales the generator settings, only used in WorldGenBigTree
-	 */
-
-/*
-	@Override
-	public void setScale(double par1, double par3, double par5) {
-
-		setTreeScale((float) par1, (float) par3, (float) par5);
-	}
-*/
-
 	public MassiveTreeGenerator setTreeScale(float height, float width, float leaves) {
 
 		heightLimitLimit = (int) (height * 12.0D);
@@ -536,7 +524,7 @@ public class MassiveTreeGenerator {
 		return this;
 	}
 
-	public boolean generate(World world, Random par2Random, BlockPos pos) {
+	public boolean generate(Level world, RandomSource par2Random, BlockPos pos) {
 
 		long time = System.currentTimeMillis();
 		startTime = System.currentTimeMillis();
@@ -577,79 +565,47 @@ public class MassiveTreeGenerator {
 			logDebug("\tTree contains " + blocksAdded + " Blocks");
 			time = System.currentTimeMillis();
 			this.updateChunks();
-			// for (TLongObjectIterator<Chunk> iter = chunkMap.iterator(); iter.hasNext();) {
-			// 	iter.advance();
-			// 	MineFactoryReloadedCore.proxy.relightChunk(iter.value());
-			// }
 			time = System.currentTimeMillis() - time;
 			logDebug("Lit massive rubber tree in: " + time + "ms");
 			return true;
 		}
 	}
 
+	private static boolean canReplaceWithLeaves(BlockState state) {
+		return state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES);
+	}
+
+	private static boolean canReplaceWithLogs(BlockState state) {
+		return state.isAir() || state.canBeReplaced() || state.is(BlockTags.LEAVES) || state.is(BlockTags.LOGS);
+	}
+
 	private static final org.apache.logging.log4j.Logger logger = org.apache.logging.log4j.LogManager.getLogger("Tree logger");
 	private int blocksAdded = 0;
 	private long startTime = 0;
 	private long lastTime = 0;
-	// private TLongObjectHashMap<Chunk> chunkMap;
-	private BlockPos.Mutable placement = new BlockPos.Mutable();
-	// private ArrayList<SectionPos> sectionsToUpdate = new ArrayList<SectionPos>();
-	private ArrayList<Chunk> chunksToUpdate = new ArrayList<Chunk>();
+	private BlockPos.MutableBlockPos placement = new BlockPos.MutableBlockPos();
+	private ArrayList<LevelChunk> chunksToUpdate = new ArrayList<LevelChunk>();
 
-	public void setBlockAndNotifyAdequately(World world, int x, int y, int z, BlockState state) {
-		// placeLog(world, rand, placement, this.blockPosSet, this.bounds, this.config);
-		// if ((y < 0) || y > 255)
-		// 	return;
+	public void setBlockAndNotifyAdequately(Level world, int x, int y, int z, BlockState state) {
 		BlockPos pos = new BlockPos(x,y,z);
-		if(safeGrowth && !world.getBlockState(pos).canBeReplacedByLogs(world, pos)) return;
-		// world.setBlock(pos, state, 19);
-		Chunk chunk = world.getChunkAt(pos);
+		if(safeGrowth && !canReplaceWithLogs(world.getBlockState(pos))) return;
+		LevelChunk chunk = world.getChunkAt(pos);
 		chunk.setBlockState(pos, state, false);
-		((ServerWorld)world).getChunkSource().blockChanged(pos);
+		((ServerLevel)world).getChunkSource().blockChanged(pos);
 		if(!chunksToUpdate.contains(chunk)) chunksToUpdate.add(chunk);
-		// SectionPos section = SectionPos.of(pos);
-		// if(!sectionsToUpdate.contains(section)) sectionsToUpdate.add(section);
-		// world.setBlock(pos, state, 144);
 		++blocksAdded;
 		if(blocksAdded%1000000==0){
 			long timeMillis = System.currentTimeMillis();
 			logDebug("Added 1M Blocks in "+(timeMillis-lastTime)+"ms, "+blocksAdded/1000000+"M blocks/"+ (timeMillis-startTime)+"ms total");
 			lastTime=timeMillis;
 		}
-		// long pos = ((x & 0xFFFFFFF0L) << 32) | (z & 0xFFFFFFF0L);
-		// BlockPos blockPos = placement.set(x, y, z);
-
-		// Chunk chunk = chunkMap.get(pos);
-		// if (chunk == null) {
-		// 	chunk = world.getChunkFromBlockCoords(blockPos);
-		// 	chunkMap.put(pos, chunk);
-		// }
-
-		// ExtendedBlockStorage[] storage = chunk.getBlockStorageArray();
-		// ExtendedBlockStorage subChunk = storage[y >> 4];
-		// if (subChunk == null)
-		// 	storage[y >> 4] = subChunk = new ExtendedBlockStorage(y & ~15, !world.provider.isNether());
-
-		// x &= 15;
-		// z &= 15;
-		// if (subChunk.get(x, y & 15, z).getBlock().hasTileEntity(subChunk.get(x, y & 15, z)))
-		// 	chunk.removeTileEntity(blockPos);
-		// y &= 15;
-
-		// subChunk.set(x, y, z, state);
-		// subChunk.setBlockLight(x, y, z, 0);
 	}
 	public void updateChunks(){
-		// for(SectionPos section : sectionsToUpdate){
-		// 	world.getLightEngine().updateSectionStatus(section,true);
-		// 	logDebug("Updating lighting in section "+section.getX()+","+section.getY()+","+section.getZ());
-		// }
-		WorldLightManager wlm = world.getLightEngine();
-		for (Chunk chunk: chunksToUpdate){
+		LevelLightEngine lightEngine = world.getLightEngine();
+		for (LevelChunk chunk: chunksToUpdate){
 			chunk.setLightCorrect(false);
 			for (int i=0;i<chunk.getSections().length;i++){
-				wlm.updateSectionStatus(SectionPos.of(chunk.getPos(),i), true);
-				// logDebug("Updating lighting in section "+chunk.getPos().x+","+i+","+chunk.getPos().z);
+				lightEngine.updateSectionStatus(SectionPos.of(chunk.getPos(),i), true);
 			}
 		}
 	}

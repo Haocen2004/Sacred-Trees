@@ -1,83 +1,96 @@
 package io.bluebeaker.enchantedsacredtrees;
 
-import java.util.Random;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.BushBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.block.BonemealableBlock;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.SaplingBlock;
-import net.minecraft.block.trees.OakTree;
-import net.minecraft.state.IntegerProperty;
-import net.minecraft.state.properties.BlockStateProperties;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.shapes.ISelectionContext;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
+public class SacredSapling extends BushBlock implements BonemealableBlock {
 
-public class SacredSapling extends SaplingBlock {
     public static final IntegerProperty STAGE = BlockStateProperties.STAGE;
+    protected static final VoxelShape SHAPE = Block.box(2.0, 0.0, 2.0, 14.0, 12.0, 14.0);
+
     protected BlockState log;
     protected BlockState wood;
     protected BlockState leaves;
-    enum Type{
-        MEGA,MASSIVE,SACRED_SPRING
+
+    enum Type {
+        MEGA, MASSIVE, SACRED_SPRING
     }
+
     protected Type type;
+
     public SacredSapling(BlockState log, BlockState wood, BlockState leaves, Properties properties, Type type) {
-        super(new OakTree(), properties);
-        this.log=log;
-        this.wood=wood;
-        this.leaves=leaves;
-        this.type=type;
+        super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(STAGE, 0));
+        this.log = log;
+        this.wood = wood;
+        this.leaves = leaves;
+        this.type = type;
     }
-    public SacredSapling(Block log, Block wood, Block leaves, Properties properties, Type type){
-        super(new OakTree(), properties);
-        this.log=log.defaultBlockState();
-        this.wood=wood.defaultBlockState();
-        this.leaves=leaves.defaultBlockState();
-        this.type=type;
-    }
-    @Override
-    public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-    }
-    @Override
-    public boolean isValidBonemealTarget(IBlockReader worldIn, BlockPos pos, BlockState state, boolean isClient)
-    {
-    return true;
-    }
-    @Override
-    public boolean isBonemealSuccess(World world, Random random, BlockPos pos, BlockState state){
-        return (double)world.random.nextFloat() < 0.45D;
+
+    public SacredSapling(Block log, Block wood, Block leaves, Properties properties, Type type) {
+        super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(STAGE, 0));
+        this.log = log.defaultBlockState();
+        this.wood = wood.defaultBlockState();
+        this.leaves = leaves.defaultBlockState();
+        this.type = type;
     }
 
     @Override
-    public void performBonemeal(ServerWorld world, Random random, BlockPos pos, BlockState state){
-        this.advanceTree(world, pos, state, random);
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(STAGE);
     }
-    public void advanceTree(ServerWorld world, BlockPos pos, BlockState state, Random random) {
+
+    @Override
+    public boolean isValidBonemealTarget(LevelReader level, BlockPos pos, BlockState state) {
+        return true;
+    }
+
+    @Override
+    public boolean isBonemealSuccess(Level level, RandomSource random, BlockPos pos, BlockState state) {
+        return (double) random.nextFloat() < 0.45D;
+    }
+
+    @Override
+    public void performBonemeal(ServerLevel level, RandomSource random, BlockPos pos, BlockState state) {
+        this.advanceTree(level, pos, state, random);
+    }
+
+    public void advanceTree(ServerLevel level, BlockPos pos, BlockState state, RandomSource random) {
         if (state.getValue(STAGE) == 0) {
-           world.setBlock(pos, state.cycle(STAGE), 4);
+            level.setBlock(pos, state.cycle(STAGE), 4);
         } else {
-            if (!net.minecraftforge.event.ForgeEventFactory.saplingGrowTree(world, random, pos)) return;
             switch (type) {
                 case SACRED_SPRING:
-                    TreeTypes.generateSacredSpringRubberTree(new MassiveTreeGenerator(log, wood, leaves), world, random, pos);
+                    TreeTypes.generateSacredSpringRubberTree(new MassiveTreeGenerator(log, wood, leaves), level, random, pos);
                     break;
                 case MEGA:
-                    TreeTypes.generateMegaRubberTree(new MassiveTreeGenerator(log, wood, leaves), world, random, pos, dynamicShape);
+                    TreeTypes.generateMegaRubberTree(new MassiveTreeGenerator(log, wood, leaves), level, random, pos, false);
                     break;
                 case MASSIVE:
-                    TreeTypes.generateMassiveRubberTree(new MassiveTreeGenerator(log, wood, leaves), world, random, pos);
+                    TreeTypes.generateMassiveRubberTree(new MassiveTreeGenerator(log, wood, leaves), level, random, pos);
                     break;
                 default:
                     break;
             }
         }
     }
+
     @Override
-    public VoxelShape getShape(BlockState state, IBlockReader reader, BlockPos pos,
-            ISelectionContext context) {
-        return super.getShape(state, reader, pos, context);
+    public VoxelShape getShape(BlockState state, BlockGetter reader, BlockPos pos, CollisionContext context) {
+        return SHAPE;
     }
 }
