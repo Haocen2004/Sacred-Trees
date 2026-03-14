@@ -1,7 +1,6 @@
 {
     "variants": {
-      "": {
-        "model": "sacred_trees:block/sacred_crimson_fungus"
-      }
+        "stage=0": { "model": "sacred_trees:block/massive_crimson_fungus" },
+        "stage=1": { "model": "sacred_trees:block/massive_crimson_fungus" }
     }
-  }
+}
