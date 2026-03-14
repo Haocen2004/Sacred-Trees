@@ -1,7 +1,6 @@
 {
     "variants": {
-      "": {
-        "model": "sacred_trees:block/sacred_acacia_sapling"
-      }
+        "stage=0": { "model": "sacred_trees:block/mega_acacia_sapling" },
+        "stage=1": { "model": "sacred_trees:block/mega_acacia_sapling" }
     }
-  }
+}
