@@ -44,7 +44,8 @@ public class SacredFungus extends SacredSapling {
                     TreeTypes.generateSacredSpringRubberTree(new MassiveTreeGenerator(log, wood, leaves, lights, vines, vines2), level, random, pos);
                     break;
                 case MEGA:
-                    TreeTypes.generateMegaRubberTree(new MassiveTreeGenerator(log, wood, leaves, lights, vines, vines2), level, random, pos, false);
+                    boolean safe = false;
+                    TreeTypes.generateMegaRubberTree(new MassiveTreeGenerator(log, wood, leaves, lights, vines, vines2), level, random, pos, safe);
                     break;
                 case MASSIVE:
                     TreeTypes.generateMassiveRubberTree(new MassiveTreeGenerator(log, wood, leaves, lights, vines, vines2), level, random, pos);

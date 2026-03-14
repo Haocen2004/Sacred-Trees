@@ -78,7 +78,8 @@ public class SacredSapling extends BushBlock implements BonemealableBlock {
                     TreeTypes.generateSacredSpringRubberTree(new MassiveTreeGenerator(log, wood, leaves), level, random, pos);
                     break;
                 case MEGA:
-                    TreeTypes.generateMegaRubberTree(new MassiveTreeGenerator(log, wood, leaves), level, random, pos, false);
+                    boolean safe = false;
+                    TreeTypes.generateMegaRubberTree(new MassiveTreeGenerator(log, wood, leaves), level, random, pos, safe);
                     break;
                 case MASSIVE:
                     TreeTypes.generateMassiveRubberTree(new MassiveTreeGenerator(log, wood, leaves), level, random, pos);
