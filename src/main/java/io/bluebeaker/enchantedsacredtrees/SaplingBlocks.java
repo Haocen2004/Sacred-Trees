@@ -17,8 +17,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-import java.util.function.Supplier;
-
 public class SaplingBlocks {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(SacredTreesMod.MODID);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(SacredTreesMod.MODID);
